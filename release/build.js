@@ -15,7 +15,7 @@ const {
   $,
   $$,
 } = require("./common");
-const { writeFileSync, mkdirSync, rmdirSync } = require("fs");
+const { readFileSync, writeFileSync, mkdirSync, rmdirSync } = require("fs");
 
 const DEFAULT_ARCH = "x86_64";
 const CBINDGEN_VERSION = "0.14.2";
@@ -172,7 +172,6 @@ function main(args) {
   $(`cbindgen --quiet --output ./include/husk.h`);
 
   info(`Generating cgo bindings from C headers`);
-  console.log(`(Ignore the pkg-config warnings)`);
   $(`./c-for-go husk.yml`);
 
   info(`Generating artifacts`);
@@ -202,36 +201,34 @@ function main(args) {
     );
   }
 
-  info(`Generating pkg-config ${chalk.yellow("husk.pc")} file`);
+  info(`Generating cflags/ldflags`);
+  let prefix = process.cwd().replace(/\\/g, "/") + "/artifacts";
   {
-    let prefix = process.cwd().replace(/\\/g, "/") + "/artifacts";
-    let lines = [];
-    lines.push(`libdir=${prefix}/lib`);
-    lines.push(`includedir=${prefix}/include`);
-    lines.push(``);
-    lines.push(`Name: husk`);
-    lines.push(`Version: head`);
-    lines.push(`Description: Rust itch.io utilities`);
-    lines.push(`Cflags: -I\${includedir}`);
+    /** @type {import("fs").WriteFileOptions} */
+    let writeOpts = { encoding: "utf-8" };
 
-    let libLine = `Libs: -L\${libdir} -lhusk`;
-    if (opts.os === "windows") {
-      let winLibs = "ws2_32 advapi32 ole32 shell32 userenv".split(" ");
-      let winLibArgs = winLibs.map((x) => `-l${x}`);
-      libLine += ` ${winLibArgs.join(" ")}`;
+    {
+      let cflags = `-I@prefix@/include`;
+      writeFileSync(`${prefix}/cflags.txt`, cflags, writeOpts);
     }
-    lines.push(libLine);
 
-    mkdirSync(`${prefix}/pkgconfig`, { recursive: true });
-    let pkgConfigContents = lines.join("\n");
-    writeFileSync(`${prefix}/pkgconfig/husk.pc`, pkgConfigContents, {
-      encoding: "utf-8",
-    });
-
-    setenv("PKG_CONFIG_PATH", `${prefix}/pkgconfig`);
+    {
+      let ldflags = `-L@prefix@/lib -lhusk`;
+      if (opts.os === "windows") {
+        let libs = "ws2_32 advapi32 ole32 shell32 userenv".split(" ");
+        let libArgs = libs.map((x) => `-l${x}`);
+        ldflags += ` ${libArgs.join(" ")}`;
+      }
+      writeFileSync(`${prefix}/ldflags.txt`, ldflags, writeOpts);
+    }
   }
 
   info(`Building & running sample binary`);
+  let cflags = readFileSync("./artifacts/cflags.txt", { encoding: "utf8" });
+  setenv("CGO_CFLAGS", cflags.replace("@prefix@", prefix));
+  let ldflags = readFileSync("./artifacts/ldflags.txt", { encoding: "utf8" });
+  setenv("CGO_LDFLAGS", ldflags.replace("@prefix@", prefix));
+
   $(`go run main.go`);
 }
 

@@ -3,7 +3,6 @@ GENERATOR:
   PackageName: lowhusk
   PackageDescription: "Utility library written in Rust exposed to Go"
   PackageLicense: "MIT"
-  PkgConfigOpts: [husk]
   Includes: ["husk.h"]
 
 PARSER:
@@ -29,3 +28,6 @@ TRANSLATOR:
   TypeTips:
     function:
       - {target: ".*", self: plain}
+  Typemap:
+    {base: "char", const: true, pointers: 1}: {base: "byte", pointers: 1}
+    {base: "char", const: true, unsigned: true, pointers: 1}: {base: "byte", pointers: 1}

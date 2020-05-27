@@ -2,12 +2,29 @@ package husk
 
 import (
 	"fmt"
+	"reflect"
+	"unsafe"
 
 	"github.com/itchio/husk/lowhusk"
 )
 
 func AsString(xs *lowhusk.XString) string {
-	s := lowhusk.XstringData(xs)[:lowhusk.XstringLen(xs)]
+	// this returns `*const u8`, ie. `*byte` in cgo, we need 2 casts
+	xdata := uintptr(unsafe.Pointer(lowhusk.XstringData(xs)))
+	// this returns `usize`, ie. `uintptr_t` in cgo, we need 1 cast
+	xlen := int(lowhusk.XstringLen(xs))
+	// this builds a slice that refers to the data in `xs`
+	// n.b: "Cap" is irrelevant, we never mutate it, got forbid
+	sh := &reflect.SliceHeader{
+		Data: xdata,
+		Len:  xlen,
+		Cap:  xlen,
+	}
+	// this slice will become invalid as soon as `XstringFree` is called
+	slice := *(*[]byte)(unsafe.Pointer(sh))
+	// this copies out from the slice (not obvious)
+	s := string(slice)
+	// ...so now `xs` can be freed
 	lowhusk.XstringFree(xs)
 	return s
 }
