@@ -1,0 +1,46 @@
+stages:
+  - build
+  - deploy
+
+build:linux:
+  stage: build
+  tags: ["docker-capsule-64"]
+  script:
+    - npm run build -- --os linux --arch x86_64
+  artifacts:
+    expire_in: 1 week
+    paths: ["artifacts"]
+
+build:darwin:
+  stage: build
+  tags: ["darwin"]
+  script:
+    - npm run build -- --os darwin --arch x86_64
+  artifacts:
+    expire_in: 1 week
+    paths: ["artifacts"]
+
+build:windows:i686:
+  stage: build
+  tags: ["windows"]
+  script:
+    - npm run build -- --os windows --arch i686
+  artifacts:
+    expire_in: 1 week
+    paths: ["artifacts"]
+
+build:windows:x86_64:
+  stage: build
+  tags: ["windows"]
+  script:
+    - npm run build -- --os windows --arch x86_64
+  artifacts:
+    expire_in: 1 week
+    paths: ["artifacts"]
+
+deploy:
+  stage: deploy
+  only: ["tags"]
+  tags: ["docker-capsule-64"]
+  script:
+    - npm run deploy
