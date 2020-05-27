@@ -1,7 +1,17 @@
 language = "C"
 header = '''
-// Hello there
+//------------ c-for-go is half-baked ------------
+// c-for-go doesn't grok `stdint.h`, even with the help
+// of an external cc, so, here we are, stdint replacement:
+
+typedef unsigned char uint8_t;
+typedef unsigned long int uint32_t;
+typedef unsigned long long int int64_t;
+typedef unsigned long long int uintptr_t;
+typedef signed long int int32_t;
+//------------ c-for-go is half-baked ------------
+
 '''
 include_guard = "husk"
-includes = ["stdint.h"]
+includes = []
 no_includes = true

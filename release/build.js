@@ -19,7 +19,6 @@ const { writeFileSync, mkdirSync, rmdirSync } = require("fs");
 
 const DEFAULT_ARCH = "x86_64";
 const CBINDGEN_VERSION = "0.14.2";
-const CFORGO_VERSION = "v0.0.0-20200417200139-ce3604ed90a1";
 
 /**
  * @typedef OsInfo
@@ -163,7 +162,7 @@ function main(args) {
   $(`cbindgen --version`);
 
   info(`Installing c-for-go...`);
-  $(`go get github.com/xlab/c-for-go@${CFORGO_VERSION}`);
+  $(`go build github.com/xlab/c-for-go`);
 
   header(`Generating build artifacts`);
   info(`Building static library`);
@@ -174,7 +173,7 @@ function main(args) {
 
   info(`Generating cgo bindings from C headers`);
   console.log(`(Ignore the pkg-config warnings)`);
-  $(`c-for-go -ccincl -ccdefs husk.yml`);
+  $(`./c-for-go husk.yml`);
 
   info(`Generating artifacts`);
   rmdirSync("artifacts", { recursive: true });

@@ -4,3 +4,5 @@
 /lowhusk
 /pkgconfig/*.pc
 /artifacts
+/c-for-go.exe
+/c-for-go
