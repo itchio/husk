@@ -232,12 +232,21 @@ function main(args) {
 
     {
       let libs = ["husk"];
+      let ldextra = "";
       if (opts.os === "windows") {
-        libs = [...libs, "ws2_32", "advapi32", "ole32", "shell32", "userenv"];
+        libs = [...libs, "ws2_32", "advapi32", "shell32", "userenv", "ole32"];
+
+        if (opts.arch === "i686") {
+          // on i686, the mingw import library `libole32.a`
+          // is missing symbols for `CoIncrementMTAUsage`
+          ldextra = "c:/Windows/System32/ole32.dll -Wl,--enable-stdcall-fixup";
+        }
       } else if (opts.os === "linux") {
         libs = [...libs, "dl"];
       }
-      let ldflags = `-L@prefix@/lib ${libs.map((x) => `-l${x}`).join(" ")}`;
+      let ldflags = `-L@prefix@/lib ${libs
+        .map((x) => `-l${x}`)
+        .join(" ")} ${ldextra}`;
       writeFileSync(`${prefix}/ldflags.txt`, ldflags, writeOpts);
     }
   }
@@ -247,6 +256,16 @@ function main(args) {
   setenv("CGO_CFLAGS", cflags.replace("@prefix@", prefix));
   let ldflags = readFileSync("./artifacts/ldflags.txt", { encoding: "utf-8" });
   setenv("CGO_LDFLAGS", ldflags.replace("@prefix@", prefix));
+
+  if (opts.os === "windows") {
+    setenv("CGO_ENABLED", "1");
+    setenv("GOOS", "windows");
+    if (opts.arch === "i686") {
+      setenv("GOARCH", "386");
+    } else {
+      setenv("GOARCH", "amd64");
+    }
+  }
 
   $(`go build -o husk-sample`);
   $(`./husk-sample`);
