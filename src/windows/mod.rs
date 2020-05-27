@@ -11,7 +11,7 @@ use widestring::U16CString;
 // constrained to `MAX_PATH`.
 const MAX_PATH: usize = 260;
 
-struct SimpleError(String);
+pub struct SimpleError(String);
 
 impl SimpleError {
     pub unsafe fn ret(self, p: *mut *mut XString) {
@@ -90,21 +90,28 @@ impl From<String> for XString {
 }
 
 impl ShellLink {
-    fn new() -> Result<Self, SimpleError> {
+    pub fn new() -> Result<Self, SimpleError> {
         init_runtime().map_err(|hr| hr.check("init_runtime").unwrap_err())?;
         let instance = create_instance::<dyn IShellLinkW>(&CLSID_SHELL_LINK)
             .map_err(|hr| hr.check("create_instance<IShellLinkW>").unwrap_err())?;
         Ok(Self { instance })
     }
 
-    fn load(&self, path: &str) -> Result<(), SimpleError> {
+    pub fn load(&self, path: &str) -> Result<(), SimpleError> {
         let pf = self.instance.get_interface::<dyn IPersistFile>().unwrap();
         let path = U16CString::from_str(path)?;
         unsafe { pf.load(path.as_ptr(), STGM_READ) }.check("IPersistFile::Load")?;
         Ok(())
     }
 
-    fn get_path(&self) -> Result<String, SimpleError> {
+    pub fn save(&self, path: &str) -> Result<(), SimpleError> {
+        let pf = self.instance.get_interface::<dyn IPersistFile>().unwrap();
+        let path = U16CString::from_str(path)?;
+        unsafe { pf.save(path.as_ptr(), false) }.check("IPersistFile::Save")?;
+        Ok(())
+    }
+
+    pub fn get_path(&self) -> Result<String, SimpleError> {
         let mut v = vec![0u16; MAX_PATH + 1];
         unsafe {
             self.instance.get_path(
@@ -116,6 +123,12 @@ impl ShellLink {
         }
         .check("IShellLinkW::GetPath")?;
         Ok(v.from_utf16("IShellLinkW::GetPath")?)
+    }
+
+    pub fn set_path(&self, path: &str) -> Result<(), SimpleError> {
+        let path = U16CString::from_str(path)?;
+        unsafe { self.instance.set_path(path.as_ptr()) }.check("IShellLinkW::SetPath")?;
+        Ok(())
     }
 }
 
@@ -155,6 +168,19 @@ pub unsafe extern "C" fn shell_link_load(
 }
 
 #[no_mangle]
+pub unsafe extern "C" fn shell_link_save(
+    link: *mut ShellLink,
+    path_data: *mut u8,
+    path_len: usize,
+    p_err: *mut *mut XString,
+) -> ReturnCode {
+    let v = std::slice::from_raw_parts(path_data, path_len);
+    let path = checked!(std::str::from_utf8(v), p_err);
+    checked!((*link).save(path), p_err);
+    ReturnCode::Ok
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn shell_link_get_path(
     link: *mut ShellLink,
     path: *mut *mut XString,
@@ -162,6 +188,19 @@ pub unsafe extern "C" fn shell_link_get_path(
 ) -> ReturnCode {
     let res = checked!((*link).get_path(), p_err);
     *path = Box::into_raw(Box::new(XString::from(res)));
+    ReturnCode::Ok
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn shell_link_set_path(
+    link: *mut ShellLink,
+    path_data: *mut u8,
+    path_len: usize,
+    p_err: *mut *mut XString,
+) -> ReturnCode {
+    let v = std::slice::from_raw_parts(path_data, path_len);
+    let path = checked!(std::str::from_utf8(v), p_err);
+    checked!((*link).set_path(path), p_err);
     ReturnCode::Ok
 }
 

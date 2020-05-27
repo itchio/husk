@@ -65,6 +65,24 @@ func (l *ShellLink) Load(path string) error {
 	return nil
 }
 
+func (l *ShellLink) Save(path string) error {
+	var pathBytes = []byte(path)
+	var err *lowhusk.XString
+	if lowhusk.ShellLinkSave(l.inner, &pathBytes[0], uint64(len(pathBytes)), &err) != 0 {
+		return AsError(err)
+	}
+	return nil
+}
+
+func (l *ShellLink) SetPath(path string) error {
+	var pathBytes = []byte(path)
+	var err *lowhusk.XString
+	if lowhusk.ShellLinkSetPath(l.inner, &pathBytes[0], uint64(len(pathBytes)), &err) != 0 {
+		return AsError(err)
+	}
+	return nil
+}
+
 func (l *ShellLink) GetPath() (string, error) {
 	var path *lowhusk.XString
 	var err *lowhusk.XString
