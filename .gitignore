@@ -8,4 +8,5 @@
 /c-for-go
 /husk-sample
 /husk-sample.exe
+cforgo-defines.h
 *.pdb

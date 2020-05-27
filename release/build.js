@@ -173,6 +173,20 @@ function main(args) {
 
   info(`Generating cgo bindings from C headers`);
   rmdirSync("lowhusk", { recursive: true });
+  {
+    let targetOS = "LINUX";
+    if (opts.os === "windows") {
+      targetOS = "WINDOWS";
+    } else if (opts.os === "darwin") {
+      targetOS = "MACOS";
+    }
+    let defines = `
+#define TARGET_OS_${targetOS} 1
+    `;
+    info(`In c-for-go defines, using target os ${chalk.green(targetOS)}`);
+    rmdirSync("cforgo-defines.h", { recursive: true });
+    writeFileSync("cforgo-defines.h", defines, { encoding: "utf-8" });
+  }
   $(`./c-for-go husk.yml`);
 
   info(`Generating artifacts`);
@@ -214,20 +228,21 @@ function main(args) {
     }
 
     {
-      let ldflags = `-L@prefix@/lib -lhusk`;
+      let libs = ["husk"];
       if (opts.os === "windows") {
-        let libs = "ws2_32 advapi32 ole32 shell32 userenv".split(" ");
-        let libArgs = libs.map((x) => `-l${x}`);
-        ldflags += ` ${libArgs.join(" ")}`;
+        libs = [...libs, "ws2_32", "advapi32", "ole32", "shell32", "userenv"];
+      } else if (opts.os === "linux") {
+        libs = [...libs, "dl"];
       }
+      let ldflags = `-L@prefix@/lib ${libs.map((x) => `-l${x}`).join(" ")}`;
       writeFileSync(`${prefix}/ldflags.txt`, ldflags, writeOpts);
     }
   }
 
   info(`Building & running sample binary`);
-  let cflags = readFileSync("./artifacts/cflags.txt", { encoding: "utf8" });
+  let cflags = readFileSync("./artifacts/cflags.txt", { encoding: "utf-8" });
   setenv("CGO_CFLAGS", cflags.replace("@prefix@", prefix));
-  let ldflags = readFileSync("./artifacts/ldflags.txt", { encoding: "utf8" });
+  let ldflags = readFileSync("./artifacts/ldflags.txt", { encoding: "utf-8" });
   setenv("CGO_LDFLAGS", ldflags.replace("@prefix@", prefix));
 
   $(`go build -o husk-sample`);

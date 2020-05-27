@@ -6,7 +6,7 @@ GENERATOR:
   Includes: ["husk.h"]
 
 PARSER:
-  SourcesPaths: ["include/husk.h"]
+  SourcesPaths: ["cforgo-defines.h", "include/husk.h"]
   Defines:
     C_FOR_GO_WORKAROUNDS: 1
 
@@ -19,6 +19,7 @@ TRANSLATOR:
       - {action: accept, from: "^XString"}
       - {action: accept, from: "^shell_"}
       - {action: accept, from: "^xstring_"}
+      - {action: accept, from: "^husk_"}
       - {transform: export}
     post-global:
       - {load: snakecase}

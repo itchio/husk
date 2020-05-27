@@ -20,3 +20,8 @@ typedef signed long int int32_t;
 include_guard = "husk"
 includes = []
 no_includes = true
+
+[defines]
+"target_os = windows" = "TARGET_OS_WINDOWS"
+"target_os = linux" = "TARGET_OS_LINUX"
+"target_os = macos" = "TARGET_OS_MACOS"
