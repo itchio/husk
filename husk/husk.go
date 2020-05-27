@@ -14,7 +14,7 @@ func AsString(xs *lowhusk.XString) string {
 	// this returns `usize`, ie. `uintptr_t` in cgo, we need 1 cast
 	xlen := int(lowhusk.XstringLen(xs))
 	// this builds a slice that refers to the data in `xs`
-	// n.b: "Cap" is irrelevant, we never mutate it, got forbid
+	// n.b: "Cap" is irrelevant, we never mutate it.
 	sh := &reflect.SliceHeader{
 		Data: xdata,
 		Len:  xlen,
