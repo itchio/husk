@@ -192,7 +192,10 @@ function main(args) {
   info(`Generating artifacts`);
   rmdirSync("artifacts", { recursive: true });
   mkdirSync("artifacts", { recursive: true });
-  $(`cp -rf lowhusk/ husk/ include/ artifacts/`);
+  $(`cp -rf lowhusk artifacts/`);
+  $(`cp -rf husk artifacts/`);
+  $(`mkdir -p artifacts/include`);
+  $(`cp -f include/husk.h artifacts/include/husk.h`);
   let libName = opts.os === "windows" ? "husk.lib" : "libhusk.a";
   mkdirSync("artifacts/lib", { recursive: true });
 
