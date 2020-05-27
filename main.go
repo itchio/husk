@@ -11,7 +11,7 @@ func main() {
 	link, err := husk.NewShellLink()
 	must(err)
 
-	must(link.Load("C:\\Users\\amos\\Desktop\\υπολογιστή.lnk"))
+	must(link.Load("C:\\Users\\amos\\Desktop\\υπολογιστή-does-not-exist.lnk"))
 
 	path, err := link.GetPath()
 	must(err)

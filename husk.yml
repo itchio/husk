@@ -7,6 +7,8 @@ GENERATOR:
 
 PARSER:
   SourcesPaths: ["include/husk.h"]
+  Defines:
+    C_FOR_GO_WORKAROUNDS: 1
 
 TRANSLATOR:
   ConstRules:

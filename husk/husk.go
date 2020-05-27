@@ -30,9 +30,7 @@ func AsString(xs *lowhusk.XString) string {
 }
 
 func AsError(err *lowhusk.XString) error {
-	s := AsString(err)
-	lowhusk.XstringFree(err)
-	return &HuskError{s}
+	return &HuskError{AsString(err)}
 }
 
 type HuskError struct {

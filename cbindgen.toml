@@ -1,6 +1,7 @@
 language = "C"
 header = '''
-//------------ c-for-go is half-baked ------------
+
+#if C_FOR_GO_WORKAROUNDS
 // c-for-go doesn't grok `stdint.h`, even with the help
 // of an external cc, so, here we are, stdint replacement:
 
@@ -9,8 +10,12 @@ typedef unsigned long int uint32_t;
 typedef unsigned long long int int64_t;
 typedef unsigned long long int uintptr_t;
 typedef signed long int int32_t;
-//------------ c-for-go is half-baked ------------
+#else // C_FOR_GO_WORKAROUNDS
 
+#include <stdlib.h>
+#include <stdint.h>
+
+#endif // C_FOR_GO_WORKAROUNDS
 '''
 include_guard = "husk"
 includes = []

@@ -172,6 +172,7 @@ function main(args) {
   $(`cbindgen --quiet --output ./include/husk.h`);
 
   info(`Generating cgo bindings from C headers`);
+  rmdirSync("lowhusk", { recursive: true });
   $(`./c-for-go husk.yml`);
 
   info(`Generating artifacts`);
@@ -229,7 +230,8 @@ function main(args) {
   let ldflags = readFileSync("./artifacts/ldflags.txt", { encoding: "utf8" });
   setenv("CGO_LDFLAGS", ldflags.replace("@prefix@", prefix));
 
-  $(`go run main.go`);
+  $(`go build -o husk-sample`);
+  $(`./husk-sample`);
 }
 
 main(process.argv.slice(2));
