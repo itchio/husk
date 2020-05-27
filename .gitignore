@@ -1,1 +1,6 @@
 /target
+/node_modules
+/include/*.h
+/lowhusk
+/pkgconfig/*.pc
+/artifacts

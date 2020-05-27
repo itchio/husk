@@ -1,0 +1,24 @@
+{
+  "name": "husk",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "node release/build.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fasterthanlime/comrust.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/fasterthanlime/comrust/issues"
+  },
+  "homepage": "https://github.com/fasterthanlime/comrust#readme",
+  "devDependencies": {
+    "@types/node": "^14.0.5"
+  }
+}

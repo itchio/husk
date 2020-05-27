@@ -1,0 +1,7 @@
+language = "C"
+header = '''
+// Hello there
+'''
+include_guard = "husk"
+includes = ["stdint.h"]
+no_includes = true

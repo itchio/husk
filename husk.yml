@@ -1,0 +1,31 @@
+---
+GENERATOR:
+  PackageName: lowhusk
+  PackageDescription: "Utility library written in Rust exposed to Go"
+  PackageLicense: "MIT"
+  PkgConfigOpts: [husk]
+  Includes: ["husk.h"]
+
+PARSER:
+  SourcesPaths: ["include/husk.h"]
+
+TRANSLATOR:
+  ConstRules:
+    defines: eval
+  Rules:
+    global:
+      - {action: accept, from: "^Shell"}
+      - {action: accept, from: "^XString"}
+      - {action: accept, from: "^shell_"}
+      - {action: accept, from: "^xstring_"}
+      - {transform: export}
+    post-global:
+      - {load: snakecase}
+  PtrTips:
+    function:
+      - {target: ".*", default: sref}
+  MemTips:
+    - {target: ".*", default: raw}
+  TypeTips:
+    function:
+      - {target: ".*", self: plain}
