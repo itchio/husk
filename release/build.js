@@ -14,7 +14,7 @@ const {
   setenv,
   $,
   $$,
-} = require("./common");
+} = require("@itchio/bob");
 const { readFileSync, writeFileSync, mkdirSync, rmdirSync } = require("fs");
 
 const DEFAULT_ARCH = "x86_64";

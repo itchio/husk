@@ -1,5 +1,5 @@
 {
-  "name": "husk",
+  "name": "@itchio/husk",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -20,5 +20,8 @@
   "homepage": "https://github.com/fasterthanlime/comrust#readme",
   "devDependencies": {
     "@types/node": "^14.0.5"
+  },
+  "dependencies": {
+    "@itchio/bob": "^1.2.0"
   }
 }
