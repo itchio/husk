@@ -1,18 +1,21 @@
 {
   "name": "@itchio/husk",
   "version": "1.0.0",
-  "description": "",
+  "description": "Rust libraries, usable from Go",
   "main": "index.js",
   "scripts": {
     "build": "node release/build.js",
-    "deploy": "node release/deploy.js"
+    "deploy": "node release/deploy.js",
+    "postinstall": "node release/postinstall.js",
+    "version": "node release/version.js",
+    "postversion": "git push && git push --tags"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/fasterthanlime/comrust.git"
   },
   "keywords": [],
-  "author": "",
+  "author": "Amos Wenger <amoswenger@gmail.com>",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/fasterthanlime/comrust/issues"

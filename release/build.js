@@ -12,10 +12,17 @@ const {
   info,
   chalk,
   setenv,
+  cd,
   $,
   $$,
 } = require("@itchio/bob");
-const { readFileSync, writeFileSync, mkdirSync, rmdirSync } = require("fs");
+const {
+  readFileSync,
+  renameSync,
+  writeFileSync,
+  mkdirSync,
+  rmdirSync,
+} = require("fs");
 
 const DEFAULT_ARCH = "x86_64";
 const CBINDGEN_VERSION = "0.14.2";
@@ -67,7 +74,7 @@ const OS_INFOS = {
 /**
  * @param {string[]} args
  */
-function main(args) {
+async function main(args) {
   info(`Preparing to build ${chalk.blue("husk")}`);
 
   /**
@@ -190,17 +197,24 @@ function main(args) {
   $(`./c-for-go husk.yml`);
 
   info(`Generating artifacts`);
-  rmdirSync("artifacts", { recursive: true });
-  mkdirSync("artifacts", { recursive: true });
-  $(`cp -rf lowhusk artifacts/`);
-  $(`cp -rf husk artifacts/`);
-  $(`mkdir -p artifacts/include`);
-  $(`cp -f include/husk.h artifacts/include/husk.h`);
-  let libName = opts.os === "windows" ? "husk.lib" : "libhusk.a";
-  mkdirSync("artifacts/lib", { recursive: true });
+  let artifactDir = `artifacts/generic`;
+  rmdirSync(artifactDir, { recursive: true });
+  mkdirSync(artifactDir, { recursive: true });
+  let huskDir = `${artifactDir}/husk`;
+  let lowhuskDir = `${artifactDir}/lowhusk`;
+  let includeDir = `${artifactDir}/lowhusk/include`;
+  let libDir = `${artifactDir}/lowhusk/lib`;
 
-  let libPath = "artifacts/lib/libhusk.a";
-  $(`cp -rf target/release/${libName} ${libPath}`);
+  $(`cp -rf lowhusk ${artifactDir}`);
+  $(`cp -rf husk ${artifactDir}`);
+  mkdirSync(includeDir, { recursive: true });
+  $(`cp -f include/husk.h ${includeDir}/husk.h`);
+
+  mkdirSync(libDir, { recursive: true });
+  let builtLibName = opts.os === "windows" ? "husk.lib" : "libhusk.a";
+  let libPath = `${libDir}/libhusk.a`;
+  $(`cp -rf target/release/${builtLibName} ${libPath}`);
+
   {
     info(`Stripping debug symbols (disable with --no-strip)`);
 
@@ -220,42 +234,55 @@ function main(args) {
   }
 
   info(`Generating cflags/ldflags`);
-  let prefix = process.cwd().replace(/\\/g, "/") + "/artifacts";
   {
-    /** @type {import("fs").WriteFileOptions} */
-    let writeOpts = { encoding: "utf-8" };
+    let prefix = "${SRCDIR}";
+    let cflags = `-I${prefix}/include`;
 
-    {
-      let cflags = `-I@prefix@/include`;
-      writeFileSync(`${prefix}/cflags.txt`, cflags, writeOpts);
-    }
+    let libs = ["husk"];
+    let ldextra = "";
+    if (opts.os === "windows") {
+      libs = [...libs, "ws2_32", "advapi32", "shell32", "userenv", "ole32"];
 
-    {
-      let libs = ["husk"];
-      let ldextra = "";
-      if (opts.os === "windows") {
-        libs = [...libs, "ws2_32", "advapi32", "shell32", "userenv", "ole32"];
-
-        if (opts.arch === "i686") {
-          // on i686, the mingw import library `libole32.a`
-          // is missing symbols for `CoIncrementMTAUsage`
-          ldextra = "c:/Windows/System32/ole32.dll -Wl,--enable-stdcall-fixup";
-        }
-      } else if (opts.os === "linux") {
-        libs = [...libs, "dl"];
+      if (opts.arch === "i686") {
+        // on i686, the mingw import library `libole32.a`
+        // is missing symbols for `CoIncrementMTAUsage`
+        ldextra = "c:/Windows/System32/ole32.dll -Wl,--enable-stdcall-fixup";
       }
-      let ldflags = `-L@prefix@/lib ${libs
-        .map((x) => `-l${x}`)
-        .join(" ")} ${ldextra}`;
-      writeFileSync(`${prefix}/ldflags.txt`, ldflags, writeOpts);
+    } else if (opts.os === "linux") {
+      libs = [...libs, "dl"];
     }
+    let ldflags = `-L${prefix}/lib ${libs
+      .map((x) => `-l${x}`)
+      .join(" ")} ${ldextra}`;
+
+    /** @type {string[]} */
+    let lines = [];
+    lines.push(`package lowhusk`);
+    lines.push(``);
+    lines.push(`// #cgo CFLAGS: ${cflags}`);
+    lines.push(`// #cgo LDFLAGS: ${ldflags}`);
+    lines.push(`import "C"`);
+
+    writeFileSync(`${lowhuskDir}/compile_flags.go`, lines.join("\n"), {
+      encoding: "utf-8",
+    });
+  }
+
+  info(`Generating go.mod`);
+  {
+    let contents = readFileSync("go.mod", { encoding: "utf-8" });
+    let lines = contents.split("\n");
+    lines = lines.filter((line) => {
+      if (line.startsWith("replace")) {
+        return false;
+      }
+      return true;
+    });
+    contents = lines.join("\n");
+    writeFileSync(`${artifactDir}/go.mod`, contents, { encoding: "utf-8" });
   }
 
   info(`Building & running sample binary`);
-  let cflags = readFileSync("./artifacts/cflags.txt", { encoding: "utf-8" });
-  setenv("CGO_CFLAGS", cflags.replace("@prefix@", prefix));
-  let ldflags = readFileSync("./artifacts/ldflags.txt", { encoding: "utf-8" });
-  setenv("CGO_LDFLAGS", ldflags.replace("@prefix@", prefix));
 
   if (opts.os === "windows") {
     setenv("CGO_ENABLED", "1");
@@ -267,8 +294,15 @@ function main(args) {
     }
   }
 
-  $(`go build -o husk-sample`);
-  $(`./husk-sample`);
+  await cd("sample", async () => {
+    $(`go build -o husk-sample`);
+    $(`./husk-sample`);
+  });
+
+  info(`Renaming artifacts directory`);
+  let finalArtifactDir = `artifacts/${opts.os}-${opts.arch}`;
+  rmdirSync(finalArtifactDir, { recursive: true });
+  renameSync(artifactDir, finalArtifactDir);
 }
 
 main(process.argv.slice(2));
