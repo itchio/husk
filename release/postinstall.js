@@ -4,19 +4,15 @@
 const {
   chalk,
   detectOS,
-  formatSize,
-  sizeof,
   downloadToStream,
   debug,
   setVerbose,
-  $$,
 } = require("@itchio/bob");
 const { resolve } = require("path");
 const {
   readFileSync,
   createWriteStream,
   rmdirSync,
-  mkdirSync,
   existsSync,
 } = require("fs");
 
@@ -83,7 +79,7 @@ async function main(args) {
     debug(`Using detected arch ${chalk.yellow(opts.arch)}`);
   }
 
-  let platform = `${opts.arch}-${opts.os}`;
+  let platform = `${opts.os}-${opts.arch}`;
   console.log(`husk ${chalk.yellow(version)} on ${chalk.yellow(platform)}`);
 
   let artifactsPath = "./artifacts";
