@@ -296,7 +296,7 @@ async function main(args) {
 
   await cd("sample", async () => {
     let sampleBinaryName = `husk-sample${opts.os === "windows" ? ".exe" : ""}`;
-    $(`go build -v -x -o ${sampleBinaryName}`);
+    $(`go build -o ${sampleBinaryName}`);
     $(`./${sampleBinaryName}`);
   });
 
