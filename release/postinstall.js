@@ -84,7 +84,7 @@ async function main(args) {
   }
 
   let platform = `${opts.arch}-${opts.os}`;
-  console.log(`valet ${chalk.yellow(version)} on ${chalk.yellow(platform)}`);
+  console.log(`husk ${chalk.yellow(version)} on ${chalk.yellow(platform)}`);
 
   let artifactsPath = "./artifacts";
 
@@ -99,7 +99,7 @@ async function main(args) {
   }
 
   let tag = `v${version}`;
-  let url = `https://github.com/itchio/valet/releases/download/${tag}/${platform}.zip`;
+  let url = `https://github.com/itchio/husk/releases/download/${tag}/${platform}.zip`;
 
   let output = `./tmp.zip`;
   let out = createWriteStream(output, { autoClose: true });
@@ -108,7 +108,7 @@ async function main(args) {
   await downloadToStream(url, out);
 
   const extract = require("extract-zip");
-  await extract(output, { dir: "." });
+  await extract(output, { dir: resolve(".") });
 
   rmdirSync(output, { recursive: true });
 
