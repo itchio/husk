@@ -245,8 +245,11 @@ async function main(args) {
 
       if (opts.arch === "i686") {
         // on i686, the mingw import library `libole32.a`
-        // is missing symbols for `CoIncrementMTAUsage`
-        ldextra = "c:/Windows/System32/ole32.dll -Wl,--enable-stdcall-fixup";
+        // is missing symbols for `CoIncrementMTAUsage`.
+        // note: we can't add "-Wl,--enable-stdcall-fixup" because it's
+        // not whitelisted as of Go 1.14.3 - so, we'll have to live
+        // with the warnings
+        ldextra = "c:/Windows/System32/ole32.dll";
       }
     } else if (opts.os === "linux") {
       libs = [...libs, "dl"];
