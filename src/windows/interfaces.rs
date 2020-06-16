@@ -27,11 +27,11 @@ pub trait IShellLinkW: IUnknown {
     unsafe fn get_description(&self, psz_name: *mut u16, cch: c_int) -> HRESULT;
     unsafe fn set_description(&self, psz_name: *const u16) -> HRESULT;
 
-    unsafe fn get_arguments(&self, psz_args: *mut u16, cch: c_int) -> HRESULT;
-    unsafe fn set_arguments(&self, psz_args: *const u16) -> HRESULT;
-
     unsafe fn get_working_directory(&self, psz_dir: *mut u16, cch: c_int) -> HRESULT;
     unsafe fn set_working_directory(&self, psz_dir: *const u16) -> HRESULT;
+
+    unsafe fn get_arguments(&self, psz_args: *mut u16, cch: c_int) -> HRESULT;
+    unsafe fn set_arguments(&self, psz_args: *const u16) -> HRESULT;
 
     unsafe fn get_hotkey(&self) -> !;
     unsafe fn set_hotkey(&self) -> !;

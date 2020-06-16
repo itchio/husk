@@ -16,7 +16,7 @@ func sample() {
 	link, err := husk.NewShellLink()
 	must(err)
 
-	target, err := filepath.Abs("./README.md")
+	target, err := filepath.Abs("./husk-sample.exe")
 	must(err)
 	must(link.SetPath(target))
 	must(link.SetArguments("--level high"))
