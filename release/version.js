@@ -1,7 +1,7 @@
 //@ts-check
 "use strict";
 
-import { $, info, chalk } from "@itchio/bob";
+const { $, info, chalk } = require("@itchio/bob");
 const { readFileSync, writeFileSync } = require("fs");
 
 function main() {
