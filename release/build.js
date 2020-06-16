@@ -211,7 +211,7 @@ async function main(args) {
   $(`cp -f include/husk.h ${includeDir}/husk.h`);
 
   mkdirSync(libDir, { recursive: true });
-  let builtLibName = opts.os === "windows" ? "husk.lib" : "libhusk.a";
+  let builtLibName = "libhusk.a";
   let libPath = `${libDir}/libhusk.a`;
   $(`cp -rf target/release/${builtLibName} ${libPath}`);
 
@@ -295,8 +295,9 @@ async function main(args) {
   }
 
   await cd("sample", async () => {
-    $(`go build -o husk-sample`);
-    $(`./husk-sample`);
+    let sampleBinaryName = `husk-sample${opts.os === "windows" ? ".exe" : ""}`;
+    $(`go build -v -x -o ${sampleBinaryName}`);
+    $(`./${sampleBinaryName}`);
   });
 
   info(`Writing out version file`);

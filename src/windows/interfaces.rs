@@ -25,13 +25,13 @@ pub trait IShellLinkW: IUnknown {
     unsafe fn set_id_list(&self) -> !;
 
     unsafe fn get_description(&self, psz_name: *mut u16, cch: c_int) -> HRESULT;
-    unsafe fn set_description(&self) -> !;
+    unsafe fn set_description(&self, psz_name: *const u16) -> HRESULT;
 
-    unsafe fn get_arguments(&self) -> !;
-    unsafe fn set_arguments(&self) -> !;
+    unsafe fn get_arguments(&self, psz_args: *mut u16, cch: c_int) -> HRESULT;
+    unsafe fn set_arguments(&self, psz_args: *const u16) -> HRESULT;
 
-    unsafe fn get_working_directory(&self) -> !;
-    unsafe fn set_working_directory(&self) -> !;
+    unsafe fn get_working_directory(&self, psz_dir: *mut u16, cch: c_int) -> HRESULT;
+    unsafe fn set_working_directory(&self, psz_dir: *const u16) -> HRESULT;
 
     unsafe fn get_hotkey(&self) -> !;
     unsafe fn set_hotkey(&self) -> !;
@@ -39,8 +39,13 @@ pub trait IShellLinkW: IUnknown {
     unsafe fn get_show_cmd(&self) -> !;
     unsafe fn set_show_cmd(&self) -> !;
 
-    unsafe fn get_icon_location(&self) -> !;
-    unsafe fn set_icon_location(&self) -> !;
+    unsafe fn get_icon_location(
+        &self,
+        psz_icon_path: *mut u16,
+        cch: c_int,
+        pi_icon: *mut c_int,
+    ) -> HRESULT;
+    unsafe fn set_icon_location(&self, psz_icon_path: *const u16, i_icon: c_int) -> HRESULT;
 
     unsafe fn set_relative_path(&self) -> !;
 

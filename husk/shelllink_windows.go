@@ -92,6 +92,79 @@ func (l *ShellLink) GetPath() (string, error) {
 	return AsString(path), nil
 }
 
+func (l *ShellLink) SetArguments(arguments string) error {
+	var pathBytes = []byte(arguments)
+	var err *lowhusk.XString
+	if lowhusk.ShellLinkSetArguments(l.inner, &pathBytes[0], uint64(len(pathBytes)), &err) != 0 {
+		return AsError(err)
+	}
+	return nil
+}
+
+func (l *ShellLink) GetArguments() (string, error) {
+	var arguments *lowhusk.XString
+	var err *lowhusk.XString
+	if lowhusk.ShellLinkGetArguments(l.inner, &arguments, &err) != 0 {
+		return "", AsError(err)
+	}
+	return AsString(arguments), nil
+}
+
+func (l *ShellLink) SetDescription(description string) error {
+	var pathBytes = []byte(description)
+	var err *lowhusk.XString
+	if lowhusk.ShellLinkSetDescription(l.inner, &pathBytes[0], uint64(len(pathBytes)), &err) != 0 {
+		return AsError(err)
+	}
+	return nil
+}
+
+func (l *ShellLink) GetDescription() (string, error) {
+	var description *lowhusk.XString
+	var err *lowhusk.XString
+	if lowhusk.ShellLinkGetDescription(l.inner, &description, &err) != 0 {
+		return "", AsError(err)
+	}
+	return AsString(description), nil
+}
+
+func (l *ShellLink) SetWorkingDirectory(workingDirectory string) error {
+	var pathBytes = []byte(workingDirectory)
+	var err *lowhusk.XString
+	if lowhusk.ShellLinkSetWorkingDirectory(l.inner, &pathBytes[0], uint64(len(pathBytes)), &err) != 0 {
+		return AsError(err)
+	}
+	return nil
+}
+
+func (l *ShellLink) GetWorkingDirectory() (string, error) {
+	var workingDirectory *lowhusk.XString
+	var err *lowhusk.XString
+	if lowhusk.ShellLinkGetWorkingDirectory(l.inner, &workingDirectory, &err) != 0 {
+		return "", AsError(err)
+	}
+	return AsString(workingDirectory), nil
+}
+
+func (l *ShellLink) SetIconLocation(iconLocation string, iconIndex int) error {
+	var bs = []byte(iconLocation)
+	var err *lowhusk.XString
+	if lowhusk.ShellLinkSetIconLocation(l.inner, &bs[0], uint64(len(bs)), iconIndex, &err) != 0 {
+		return AsError(err)
+	}
+	return nil
+}
+
+func (l *ShellLink) GetIconLocation() (string, int, error) {
+	var iconLocation *lowhusk.XString
+	var iconIndex int
+	var err *lowhusk.XString
+	if lowhusk.ShellLinkGetIconLocation(l.inner, &iconLocation, &iconIndex, &err) != 0 {
+		return "", 0, AsError(err)
+	}
+	return AsString(iconLocation), int(iconIndex), nil
+}
+
 func (l *ShellLink) Free() {
 	lowhusk.ShellLinkFree(l.inner)
 }

@@ -19,6 +19,10 @@ func sample() {
 	target, err := filepath.Abs("./README.md")
 	must(err)
 	must(link.SetPath(target))
+	must(link.SetArguments("--level high"))
+	must(link.SetDescription("C'est tous les jours noël"))
+	must(link.SetWorkingDirectory(`C:\`))
+	must(link.SetIconLocation(`C:\Windows\System32\notepad.exe`, 0))
 
 	name := `υπολογιστή.lnk`
 	wd, err := os.Getwd()
@@ -39,6 +43,21 @@ func sample() {
 
 	path, err := link.GetPath()
 	must(err)
-
 	log.Printf("Shortcut points to: %s", path)
+
+	arguments, err := link.GetArguments()
+	must(err)
+	log.Printf("Shortcut has arguments: %s", arguments)
+
+	description, err := link.GetDescription()
+	must(err)
+	log.Printf("Shortcut has description: %s", description)
+
+	workingDirectory, err := link.GetWorkingDirectory()
+	must(err)
+	log.Printf("Shortcut has working directory: %s", workingDirectory)
+
+	iconLocation, iconIndex, err := link.GetIconLocation()
+	must(err)
+	log.Printf("Shortcut has icon location: %s, index %d", iconLocation, iconIndex)
 }

@@ -9,7 +9,10 @@ use widestring::U16CString;
 
 // unfortunately, paths/descriptions/etc. of ShellLinks are all
 // constrained to `MAX_PATH`.
+// TODO: figure out how this works with LongPathAware?
 const MAX_PATH: usize = 260;
+
+const INFOTIPSIZE: usize = 1024;
 
 pub struct SimpleError(String);
 
@@ -130,6 +133,70 @@ impl ShellLink {
         unsafe { self.instance.set_path(path.as_ptr()) }.check("IShellLinkW::SetPath")?;
         Ok(())
     }
+
+    pub fn get_arguments(&self) -> Result<String, SimpleError> {
+        let mut v = vec![0u16; INFOTIPSIZE + 1];
+        unsafe { self.instance.get_arguments(v.as_mut_ptr(), v.len() as _) }
+            .check("IShellLinkW::GetArguments")?;
+        Ok(v.from_utf16("IShellLinkW::GetArguments")?)
+    }
+
+    pub fn set_arguments(&self, path: &str) -> Result<(), SimpleError> {
+        let path = U16CString::from_str(path)?;
+        unsafe { self.instance.set_arguments(path.as_ptr()) }.check("IShellLinkW::SetArguments")?;
+        Ok(())
+    }
+
+    pub fn get_description(&self) -> Result<String, SimpleError> {
+        let mut v = vec![0u16; INFOTIPSIZE + 1];
+        unsafe { self.instance.get_description(v.as_mut_ptr(), v.len() as _) }
+            .check("IShellLinkW::GetDescription")?;
+        Ok(v.from_utf16("IShellLinkW::GetDescription")?)
+    }
+
+    pub fn set_description(&self, path: &str) -> Result<(), SimpleError> {
+        let path = U16CString::from_str(path)?;
+        unsafe { self.instance.set_description(path.as_ptr()) }
+            .check("IShellLinkW::SetDescription")?;
+        Ok(())
+    }
+
+    pub fn get_working_directory(&self) -> Result<String, SimpleError> {
+        let mut v = vec![0u16; INFOTIPSIZE + 1];
+        unsafe {
+            self.instance
+                .get_working_directory(v.as_mut_ptr(), v.len() as _)
+        }
+        .check("IShellLinkW::GetWorkingDirectory")?;
+        Ok(v.from_utf16("IShellLinkW::GetWorkingDirectory")?)
+    }
+
+    pub fn set_working_directory(&self, path: &str) -> Result<(), SimpleError> {
+        let path = U16CString::from_str(path)?;
+        unsafe { self.instance.set_working_directory(path.as_ptr()) }
+            .check("IShellLinkW::SetWorkingDirectory")?;
+        Ok(())
+    }
+
+    pub fn get_icon_location(&self) -> Result<(String, i32), SimpleError> {
+        let mut v = vec![0u16; INFOTIPSIZE + 1];
+        let mut index = 0;
+        unsafe {
+            self.instance
+                .get_icon_location(v.as_mut_ptr(), v.len() as _, &mut index)
+        }
+        .check("IShellLinkW::GetIconLocation")?;
+
+        let s = v.from_utf16("IShellLinkW::GetIconLocation")?;
+        Ok((s, index as _))
+    }
+
+    pub fn set_icon_location(&self, path: &str, index: i32) -> Result<(), SimpleError> {
+        let path = U16CString::from_str(path)?;
+        unsafe { self.instance.set_icon_location(path.as_ptr(), index as _) }
+            .check("IShellLinkW::SetIconLocation")?;
+        Ok(())
+    }
 }
 
 macro_rules! checked {
@@ -201,6 +268,105 @@ pub unsafe extern "C" fn shell_link_set_path(
     let v = std::slice::from_raw_parts(path_data, path_len);
     let path = checked!(std::str::from_utf8(v), p_err);
     checked!((*link).set_path(path), p_err);
+    ReturnCode::Ok
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn shell_link_get_arguments(
+    link: *mut ShellLink,
+    arguments: *mut *mut XString,
+    p_err: *mut *mut XString,
+) -> ReturnCode {
+    let res = checked!((*link).get_arguments(), p_err);
+    *arguments = Box::into_raw(Box::new(XString::from(res)));
+    ReturnCode::Ok
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn shell_link_set_arguments(
+    link: *mut ShellLink,
+    arguments_data: *mut u8,
+    arguments_len: usize,
+    p_err: *mut *mut XString,
+) -> ReturnCode {
+    let v = std::slice::from_raw_parts(arguments_data, arguments_len);
+    let arguments = checked!(std::str::from_utf8(v), p_err);
+    checked!((*link).set_arguments(arguments), p_err);
+    ReturnCode::Ok
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn shell_link_get_description(
+    link: *mut ShellLink,
+    description: *mut *mut XString,
+    p_err: *mut *mut XString,
+) -> ReturnCode {
+    let res = checked!((*link).get_description(), p_err);
+    *description = Box::into_raw(Box::new(XString::from(res)));
+    ReturnCode::Ok
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn shell_link_set_description(
+    link: *mut ShellLink,
+    description_data: *mut u8,
+    description_len: usize,
+    p_err: *mut *mut XString,
+) -> ReturnCode {
+    let v = std::slice::from_raw_parts(description_data, description_len);
+    let description = checked!(std::str::from_utf8(v), p_err);
+    checked!((*link).set_description(description), p_err);
+    ReturnCode::Ok
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn shell_link_get_working_directory(
+    link: *mut ShellLink,
+    working_directory: *mut *mut XString,
+    p_err: *mut *mut XString,
+) -> ReturnCode {
+    let res = checked!((*link).get_working_directory(), p_err);
+    *working_directory = Box::into_raw(Box::new(XString::from(res)));
+    ReturnCode::Ok
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn shell_link_set_working_directory(
+    link: *mut ShellLink,
+    working_directory_data: *mut u8,
+    working_directory_len: usize,
+    p_err: *mut *mut XString,
+) -> ReturnCode {
+    let v = std::slice::from_raw_parts(working_directory_data, working_directory_len);
+    let working_directory = checked!(std::str::from_utf8(v), p_err);
+    checked!((*link).set_working_directory(working_directory), p_err);
+    ReturnCode::Ok
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn shell_link_get_icon_location(
+    link: *mut ShellLink,
+    icon_location: *mut *mut XString,
+    icon_index: *mut i32,
+    p_err: *mut *mut XString,
+) -> ReturnCode {
+    let (res, res_index) = checked!((*link).get_icon_location(), p_err);
+    *icon_location = Box::into_raw(Box::new(XString::from(res)));
+    *icon_index = res_index;
+    ReturnCode::Ok
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn shell_link_set_icon_location(
+    link: *mut ShellLink,
+    icon_location_data: *mut u8,
+    icon_location_len: usize,
+    icon_index: i32,
+    p_err: *mut *mut XString,
+) -> ReturnCode {
+    let v = std::slice::from_raw_parts(icon_location_data, icon_location_len);
+    let icon_location = checked!(std::str::from_utf8(v), p_err);
+    checked!((*link).set_icon_location(icon_location, icon_index), p_err);
     ReturnCode::Ok
 }
 
