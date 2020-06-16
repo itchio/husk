@@ -14,6 +14,7 @@ const {
   createWriteStream,
   rmdirSync,
   existsSync,
+  renameSync,
 } = require("fs");
 
 /**
@@ -107,6 +108,8 @@ async function main(args) {
   await extract(output, { dir: resolve(".") });
 
   rmdirSync(output, { recursive: true });
+  rmdirSync(artifactsPath, { recursive: true });
+  renameSync(platform, artifactsPath);
 
   let end = Date.now();
   let totalTime = `${((end - start) / 1000).toFixed(1)}s`;
