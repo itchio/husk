@@ -299,6 +299,10 @@ async function main(args) {
     $(`./husk-sample`);
   });
 
+  info(`Writing out version file`);
+  let version = require("../package.json").version;
+  writeFileSync(`${artifactDir}/version`, version, { encoding: "utf-8" });
+
   info(`Renaming artifacts directory`);
   let finalArtifactDir = `artifacts/${opts.os}-${opts.arch}`;
   rmdirSync(finalArtifactDir, { recursive: true });

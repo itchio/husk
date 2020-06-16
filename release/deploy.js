@@ -1,7 +1,13 @@
 //@ts-check
 "use strict";
 
-const { readFileSync } = require("fs");
+const {
+  mkdirSync,
+  readFileSync,
+  rmdirSync,
+  readdirSync,
+  statSync,
+} = require("fs");
 const { $, chalk, info, header } = require("@itchio/bob");
 
 function main() {
@@ -45,7 +51,64 @@ function main() {
   let [, major, minor, patch] = matches;
   info(`Releasing version ${chalk.yellow(`${major}.${minor}.${patch}`)}`);
 
-  throw new Error(`${chalk.magenta("Deploy is a stub")} right now.`);
+  rmdirSync("./artifacts/tmp.zip", { recursive: true });
+  const targets = readdirSync("./artifacts");
+  info(`Will upload targets: ${targets.map(chalk.yellow).join(", ")}`);
+
+  if (process.env.DRY_RUN) {
+    info("Dry run, bailing out now");
+    return;
+  }
+
+  header("Uploading native addons...");
+  mkdirSync("./release-tools", { recursive: true });
+
+  let toolRepo = `https://github.com/github-release/github-release`;
+  let toolTag = `v0.8.1`;
+  let toolUrl = `${toolRepo}/releases/download/${toolTag}/linux-amd64-github-release.bz2`;
+  let ghr = `./release-tools/github-release`;
+  try {
+    statSync(ghr);
+    info(`Using existing ${chalk.yellow(ghr)}...`);
+  } catch (e) {
+    info(`Downloading ${chalk.yellow(ghr)}`);
+    $(`curl --location "${toolUrl}" | bunzip2 > ${ghr}`);
+  }
+  $(`chmod +x ${ghr}`);
+  $(`${ghr} --version`);
+
+  process.env.GITHUB_USER = "itchio";
+  process.env.GITHUB_REPO = "husk";
+  if (!process.env.GITHUB_TOKEN) {
+    throw new Error(
+      `${chalk.yellow(
+        "$GITHUB_TOKEN"
+      )} is unset, are you running this script outside of CI?`
+    );
+  }
+
+  try {
+    $(`${ghr} delete --tag "${tag}"`);
+    info(`Probably replacing release`);
+  } catch (e) {
+    info(`Probably not replacing release`);
+  }
+  $(`${ghr} release --tag "${tag}"`);
+
+  for (const target of targets) {
+    let label = `Prebuilt library for ${target}`;
+    $(
+      `(cd ./artifacts; zip --display-dots --recurse-paths ./tmp.zip ./${target})`
+    );
+    // note: github-release says it can upload from stdin, but it can't
+    $(
+      [
+        `${ghr} upload --tag "${tag}" --file "./artifacts/tmp.zip" --replace`,
+        `--label "${label}" --name "${target}.zip"`,
+      ].join(" ")
+    );
+    rmdirSync("./artifacts/tmp.zip", { recursive: true });
+  }
 }
 
 main();
