@@ -1,10 +1,12 @@
 mod interfaces;
+mod runtime;
 use interfaces::*;
 
 use com::{
-    runtime::{create_instance, init_runtime},
+    runtime::create_instance,
     sys::{FAILED, HRESULT},
 };
+use runtime::ComGuard;
 use std::path::{Path, PathBuf};
 use widestring::U16CString;
 
@@ -105,6 +107,7 @@ pub enum ReturnCode {
 
 /// Handle for an IShellLink instance
 pub struct ShellLink {
+    _guard: ComGuard,
     instance: com::ComRc<dyn IShellLinkW>,
 }
 
@@ -121,10 +124,13 @@ impl From<String> for XString {
 
 impl ShellLink {
     pub fn new() -> Result<Self, SimpleError> {
-        init_runtime().map_err(|hr| hr.check("init_runtime").unwrap_err())?;
+        let guard = ComGuard::new()?;
         let instance = create_instance::<dyn IShellLinkW>(&CLSID_SHELL_LINK)
             .map_err(|hr| hr.check("create_instance<IShellLinkW>").unwrap_err())?;
-        Ok(Self { instance })
+        Ok(Self {
+            _guard: guard,
+            instance,
+        })
     }
 
     pub fn load<P: AsRef<Path>>(&self, path: P) -> Result<(), SimpleError> {
@@ -434,9 +440,35 @@ pub unsafe extern "C" fn xstring_len(xs: *mut XString) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use once_cell::sync::Lazy;
+    use std::sync::{Mutex, Once};
+
+    // IMPORTANT NOTE: these tests cannot run in parallel in the same
+    // process, as they manipulate process-wide COM state.
+    static TEST_MUTEX: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
+    static LOG: Once = Once::new();
+
+    #[test]
+    fn test_com_guard() {
+        LOG.call_once(pretty_env_logger::init);
+        let _lock = TEST_MUTEX.lock().unwrap();
+
+        assert_eq!(false, runtime::is_active());
+        let g1 = ComGuard::new().unwrap();
+        assert_eq!(true, runtime::is_active());
+        let g2 = ComGuard::new().unwrap();
+        assert_eq!(true, runtime::is_active());
+        drop(g2);
+        assert_eq!(true, runtime::is_active());
+        drop(g1);
+        assert_eq!(false, runtime::is_active());
+    }
 
     #[test]
     fn create_two_shortcuts() {
+        LOG.call_once(pretty_env_logger::init);
+        let _lock = TEST_MUTEX.lock().unwrap();
+
         let cwd = std::env::current_dir().unwrap();
         println!("cwd = {:?}", cwd);
 
