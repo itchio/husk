@@ -218,7 +218,9 @@ async function main(args) {
   let libPath = `${libDir}/libhusk.a`;
   $(`cp -rf target/release/${builtLibName} ${libPath}`);
 
-  {
+  if (process.env.NO_STRIP === "1") {
+    info(`$NO_STRIP is set to 1, not stripping...`);
+  } else {
     info(`Stripping debug symbols (disable with --no-strip)`);
 
     let before = sizeof(libPath);

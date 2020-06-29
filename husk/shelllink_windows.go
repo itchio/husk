@@ -47,6 +47,8 @@ type ShellLink struct {
 	inner *lowhusk.ShellLink
 }
 
+// Important: ShellLink is not thread safe. Call runtime.LockOSThread()
+// and defer runtime.UnlockOSThread() before using it.
 func NewShellLink() (*ShellLink, error) {
 	var err *lowhusk.XString
 	var link *lowhusk.ShellLink

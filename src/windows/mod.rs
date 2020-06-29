@@ -500,9 +500,6 @@ mod tests {
         for name in &["Test1.lnk", "Test2.lnk"] {
             let path = cwd.join(name);
             let target = cwd.join("Cargo.toml");
-            // TODO: figure out if ShellLink should be Send or not.
-            // If not, the FFI needs to synchronize access to it
-            // with a Mutex.
             std::thread::spawn(move || {
                 let sl = ShellLink::new().unwrap();
                 std::fs::remove_file(&path).ok();

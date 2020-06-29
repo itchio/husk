@@ -6,12 +6,23 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/itchio/husk/husk"
+
+	"net/http"
+	_ "net/http/pprof"
 )
 
 func sample() {
 	husk.Hello()
+
+	go func() {
+		log.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
+
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
 
 	link, err := husk.NewShellLink()
 	must(err)
@@ -31,12 +42,7 @@ func sample() {
 	absPath := filepath.Join(wd, name)
 	log.Printf("Saving to: %s", absPath)
 
-	done := make(chan struct{})
-	go func() {
-		must(link.Save(absPath))
-		done <- struct{}{}
-	}()
-	<-done
+	must(link.Save(absPath))
 	link.Free()
 
 	_, err = os.Stat(absPath)
