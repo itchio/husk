@@ -171,6 +171,9 @@ async function main(args) {
   info(`Installing c-for-go...`);
   $(`go build github.com/xlab/c-for-go`);
 
+  header(`Testing Rust library`);
+  $(`cargo +${toolchain} test`);
+
   header(`Generating build artifacts`);
   info(`Building static library`);
   $(`cargo +${toolchain} build --release`);
@@ -301,6 +304,33 @@ async function main(args) {
     let sampleBinaryName = `husk-sample${opts.os === "windows" ? ".exe" : ""}`;
     $(`go build -o ${sampleBinaryName}`);
     $(`./${sampleBinaryName}`);
+
+    if (opts.os === "windows") {
+      info(`Verifying that we don't rely on CoIncrementMTAUsage`);
+      let lines = $$(
+        `objdump --private-headers ./${sampleBinaryName} | grep -E "[0-9]+  Co[A-Z]"`
+      ).split("\n");
+      let comMethods = [];
+      for (let line of lines) {
+        line = line.trim();
+        if (line == "") {
+          continue;
+        }
+        let matches = /[^ ]+$/.exec(line);
+        if (matches) {
+          let method = matches[0];
+          comMethods.push(method);
+        } else {
+          console.log(chalk.yellow(`Could not parse line: ${line}`));
+        }
+      }
+      console.log(`Found COM methods ${comMethods.join(", ")}`);
+      if (comMethods.indexOf("CoIncrementMTAUsage") !== -1) {
+        throw new Error(
+          "husk cannot depend on CoIncrementMTAUsage, as it breaks Windows 7 compatibility."
+        );
+      }
+    }
   });
 
   info(`Writing out version file`);

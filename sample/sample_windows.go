@@ -31,7 +31,12 @@ func sample() {
 	absPath := filepath.Join(wd, name)
 	log.Printf("Saving to: %s", absPath)
 
-	must(link.Save(absPath))
+	done := make(chan struct{})
+	go func() {
+		must(link.Save(absPath))
+		done <- struct{}{}
+	}()
+	<-done
 	link.Free()
 
 	_, err = os.Stat(absPath)

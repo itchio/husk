@@ -1,4 +1,5 @@
 mod interfaces;
+// TODO: figure out why cbindgen refuses to ignore this module
 mod runtime;
 use interfaces::*;
 
@@ -465,7 +466,7 @@ mod tests {
     }
 
     #[test]
-    fn create_two_shortcuts() {
+    fn create_shortcuts() {
         LOG.call_once(pretty_env_logger::init);
         let _lock = TEST_MUTEX.lock().unwrap();
 
@@ -485,6 +486,37 @@ mod tests {
             sl.load(&path).unwrap();
 
             std::fs::remove_file(&path).unwrap();
+        }
+    }
+
+    #[test]
+    fn create_two_shortcuts_in_threads() {
+        LOG.call_once(pretty_env_logger::init);
+        let _lock = TEST_MUTEX.lock().unwrap();
+
+        let cwd = std::env::current_dir().unwrap();
+        println!("cwd = {:?}", cwd);
+
+        for name in &["Test1.lnk", "Test2.lnk"] {
+            let path = cwd.join(name);
+            let target = cwd.join("Cargo.toml");
+            // TODO: figure out if ShellLink should be Send or not.
+            // If not, the FFI needs to synchronize access to it
+            // with a Mutex.
+            std::thread::spawn(move || {
+                let sl = ShellLink::new().unwrap();
+                std::fs::remove_file(&path).ok();
+
+                sl.set_path(target).unwrap();
+                sl.save(&path).unwrap();
+
+                let sl = ShellLink::new().unwrap();
+                sl.load(&path).unwrap();
+
+                std::fs::remove_file(&path).unwrap();
+            })
+            .join()
+            .unwrap();
         }
     }
 }

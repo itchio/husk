@@ -1,4 +1,8 @@
-use com::sys::{FAILED, HRESULT};
+//! The purpose of this module is to avoid calling `CoIncrementMTAUsage`,
+//! which is *extremely* convenient, but does not exist on Windows 7.
+//!
+//! So, to the 7% of gamers still on Windows 7 - this one's for you.
+use com::sys::FAILED;
 use log;
 use once_cell::sync::Lazy;
 use std::{
@@ -22,19 +26,23 @@ extern "C" {
     fn CoUninitialize();
 }
 
+// TODO: this is only here because cbindgen refuses to ignore
+// this module and emits a function declaration for CoInitializeEx.
+pub type HRESULT = i32;
+
 enum Action {
     Increment,
     Decrement,
 }
 const COINIT_MULTITHREADED: u32 = 0x0;
 
-type ComResult = Result<(), Error>;
+type ComResult<T> = Result<T, Error>;
 
-static SENDER_SLOT: Lazy<Mutex<Option<(Sender<Action>, Receiver<ComResult>)>>> =
+static SENDER_SLOT: Lazy<Mutex<Option<(Sender<Action>, Receiver<ComResult<()>>)>>> =
     Lazy::new(|| Mutex::new(None));
 static ACTIVE: AtomicBool = AtomicBool::new(false);
 
-fn call_com_thread(action: Action) -> ComResult {
+fn call_com_thread(action: Action) -> ComResult<()> {
     let mut sender_slot = SENDER_SLOT.lock().unwrap();
     match sender_slot.as_ref() {
         None => {
@@ -50,7 +58,7 @@ fn call_com_thread(action: Action) -> ComResult {
                         Action::Increment => counter += 1,
                         Action::Decrement => counter -= 1,
                     }
-                    let res: ComResult = match counter {
+                    let res = match counter {
                         0 => {
                             log::debug!("COM thread winding down (0 reached)");
                             unsafe {
@@ -91,11 +99,11 @@ fn call_com_thread(action: Action) -> ComResult {
     }
 }
 
-fn increment() -> ComResult {
+fn increment() -> ComResult<()> {
     call_com_thread(Action::Increment)
 }
 
-fn decrement() -> ComResult {
+fn decrement() -> ComResult<()> {
     call_com_thread(Action::Decrement)
 }
 
