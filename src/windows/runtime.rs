@@ -21,7 +21,7 @@ pub enum Error {
 }
 
 #[link(name = "ole32")]
-extern "C" {
+extern "stdcall" {
     fn CoInitializeEx(pvReserved: *mut c_void, dwCoInit: u32) -> HRESULT;
     fn CoUninitialize();
 }
