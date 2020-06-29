@@ -5,6 +5,7 @@ use com::{
     runtime::{create_instance, init_runtime},
     sys::{FAILED, HRESULT},
 };
+use std::path::{Path, PathBuf};
 use widestring::U16CString;
 
 // unfortunately, paths/descriptions/etc. of ShellLinks are all
@@ -14,6 +15,7 @@ const MAX_PATH: usize = 260;
 
 const INFOTIPSIZE: usize = 1024;
 
+#[derive(Debug)]
 pub struct SimpleError(String);
 
 impl SimpleError {
@@ -32,16 +34,41 @@ where
     }
 }
 
-trait FromUtf16 {
-    fn from_utf16(self, method: &str) -> Result<String, SimpleError>;
+struct NulTerminatedUtf16(Vec<u16>);
+
+impl NulTerminatedUtf16 {
+    fn to_u16_c_string(self, method: &str) -> Result<U16CString, SimpleError> {
+        let res = U16CString::from_vec_with_nul(self.0)
+            .map_err(|_| SimpleError(format!("input is not null-terminated in {}", method)))?;
+        Ok(res)
+    }
+
+    fn to_string(self, method: &str) -> Result<String, SimpleError> {
+        let res = self
+            .to_u16_c_string(method)?
+            .to_string()
+            .map_err(|_| SimpleError(format!("invalid utf-16 data in {}", method)))?;
+        Ok(res)
+    }
+
+    fn to_path_buf(self, method: &str) -> Result<PathBuf, SimpleError> {
+        let res = self.to_u16_c_string(method)?;
+        let res = res.to_os_string();
+        Ok(res.into())
+    }
 }
 
-impl FromUtf16 for Vec<u16> {
-    fn from_utf16(self, method: &str) -> Result<String, SimpleError> {
-        let s = U16CString::from_vec_with_nul(self)
-            .map_err(|_| SimpleError(format!("missing null terminator in {} result", method)))?;
-        Ok(s.to_string()
-            .map_err(|_| SimpleError(format!("invalid utf-16 data in {} result", method)))?)
+pub trait IntoStringSimple {
+    fn into_string_simple(self, method: &str) -> Result<String, SimpleError>;
+}
+
+impl IntoStringSimple for PathBuf {
+    fn into_string_simple(self, method: &str) -> Result<String, SimpleError> {
+        let s = self.into_os_string();
+        let s = s
+            .into_string()
+            .map_err(|_| SimpleError(format!("invalid utf-16 data in {} result", method)))?;
+        Ok(s)
     }
 }
 
@@ -100,21 +127,21 @@ impl ShellLink {
         Ok(Self { instance })
     }
 
-    pub fn load(&self, path: &str) -> Result<(), SimpleError> {
+    pub fn load<P: AsRef<Path>>(&self, path: P) -> Result<(), SimpleError> {
         let pf = self.instance.get_interface::<dyn IPersistFile>().unwrap();
-        let path = U16CString::from_str(path)?;
+        let path = U16CString::from_os_str(path.as_ref())?;
         unsafe { pf.load(path.as_ptr(), STGM_READ) }.check("IPersistFile::Load")?;
         Ok(())
     }
 
-    pub fn save(&self, path: &str) -> Result<(), SimpleError> {
+    pub fn save<P: AsRef<Path>>(&self, path: P) -> Result<(), SimpleError> {
         let pf = self.instance.get_interface::<dyn IPersistFile>().unwrap();
-        let path = U16CString::from_str(path)?;
+        let path = U16CString::from_os_str(path.as_ref())?;
         unsafe { pf.save(path.as_ptr(), false) }.check("IPersistFile::Save")?;
         Ok(())
     }
 
-    pub fn get_path(&self) -> Result<String, SimpleError> {
+    pub fn get_path(&self) -> Result<PathBuf, SimpleError> {
         let mut v = vec![0u16; MAX_PATH + 1];
         unsafe {
             self.instance.get_path(
@@ -125,11 +152,12 @@ impl ShellLink {
             )
         }
         .check("IShellLinkW::GetPath")?;
-        Ok(v.from_utf16("IShellLinkW::GetPath")?)
+        Ok(NulTerminatedUtf16(v).to_path_buf("IShellLinkW::GetPath")?)
     }
 
-    pub fn set_path(&self, path: &str) -> Result<(), SimpleError> {
-        let path = U16CString::from_str(path)?;
+    /// Sets the shell link's path (what it points to)
+    pub fn set_path<P: AsRef<Path>>(&self, path: P) -> Result<(), SimpleError> {
+        let path = U16CString::from_os_str(path.as_ref())?;
         unsafe { self.instance.set_path(path.as_ptr()) }.check("IShellLinkW::SetPath")?;
         Ok(())
     }
@@ -138,7 +166,7 @@ impl ShellLink {
         let mut v = vec![0u16; INFOTIPSIZE + 1];
         unsafe { self.instance.get_arguments(v.as_mut_ptr(), v.len() as _) }
             .check("IShellLinkW::GetArguments")?;
-        Ok(v.from_utf16("IShellLinkW::GetArguments")?)
+        Ok(NulTerminatedUtf16(v).to_string("IShellLinkW::GetArguments")?)
     }
 
     pub fn set_arguments(&self, path: &str) -> Result<(), SimpleError> {
@@ -151,7 +179,7 @@ impl ShellLink {
         let mut v = vec![0u16; INFOTIPSIZE + 1];
         unsafe { self.instance.get_description(v.as_mut_ptr(), v.len() as _) }
             .check("IShellLinkW::GetDescription")?;
-        Ok(v.from_utf16("IShellLinkW::GetDescription")?)
+        Ok(NulTerminatedUtf16(v).to_string("IShellLinkW::GetDescription")?)
     }
 
     pub fn set_description(&self, path: &str) -> Result<(), SimpleError> {
@@ -161,24 +189,24 @@ impl ShellLink {
         Ok(())
     }
 
-    pub fn get_working_directory(&self) -> Result<String, SimpleError> {
+    pub fn get_working_directory(&self) -> Result<PathBuf, SimpleError> {
         let mut v = vec![0u16; INFOTIPSIZE + 1];
         unsafe {
             self.instance
                 .get_working_directory(v.as_mut_ptr(), v.len() as _)
         }
         .check("IShellLinkW::GetWorkingDirectory")?;
-        Ok(v.from_utf16("IShellLinkW::GetWorkingDirectory")?)
+        Ok(NulTerminatedUtf16(v).to_path_buf("IShellLinkW::GetWorkingDirectory")?)
     }
 
-    pub fn set_working_directory(&self, path: &str) -> Result<(), SimpleError> {
-        let path = U16CString::from_str(path)?;
+    pub fn set_working_directory<P: AsRef<Path>>(&self, path: P) -> Result<(), SimpleError> {
+        let path = U16CString::from_os_str(path.as_ref().as_os_str())?;
         unsafe { self.instance.set_working_directory(path.as_ptr()) }
             .check("IShellLinkW::SetWorkingDirectory")?;
         Ok(())
     }
 
-    pub fn get_icon_location(&self) -> Result<(String, i32), SimpleError> {
+    pub fn get_icon_location(&self) -> Result<(PathBuf, i32), SimpleError> {
         let mut v = vec![0u16; INFOTIPSIZE + 1];
         let mut index = 0;
         unsafe {
@@ -187,12 +215,16 @@ impl ShellLink {
         }
         .check("IShellLinkW::GetIconLocation")?;
 
-        let s = v.from_utf16("IShellLinkW::GetIconLocation")?;
+        let s = NulTerminatedUtf16(v).to_path_buf("IShellLinkW::GetIconLocation")?;
         Ok((s, index as _))
     }
 
-    pub fn set_icon_location(&self, path: &str, index: i32) -> Result<(), SimpleError> {
-        let path = U16CString::from_str(path)?;
+    pub fn set_icon_location<P: AsRef<Path>>(
+        &self,
+        path: P,
+        index: i32,
+    ) -> Result<(), SimpleError> {
+        let path = U16CString::from_os_str(path.as_ref().as_os_str())?;
         unsafe { self.instance.set_icon_location(path.as_ptr(), index as _) }
             .check("IShellLinkW::SetIconLocation")?;
         Ok(())
@@ -254,7 +286,8 @@ pub unsafe extern "C" fn shell_link_get_path(
     p_err: *mut *mut XString,
 ) -> ReturnCode {
     let res = checked!((*link).get_path(), p_err);
-    *path = Box::into_raw(Box::new(XString::from(res)));
+    let res: String = checked!(res.into_string_simple("shell_link_get_path"), p_err);
+    *path = Box::into_raw(Box::new(res.into()));
     ReturnCode::Ok
 }
 
@@ -326,7 +359,11 @@ pub unsafe extern "C" fn shell_link_get_working_directory(
     p_err: *mut *mut XString,
 ) -> ReturnCode {
     let res = checked!((*link).get_working_directory(), p_err);
-    *working_directory = Box::into_raw(Box::new(XString::from(res)));
+    let res: String = checked!(
+        res.into_string_simple("shell_link_get_working_directory"),
+        p_err
+    );
+    *working_directory = Box::into_raw(Box::new(res.into()));
     ReturnCode::Ok
 }
 
@@ -351,7 +388,11 @@ pub unsafe extern "C" fn shell_link_get_icon_location(
     p_err: *mut *mut XString,
 ) -> ReturnCode {
     let (res, res_index) = checked!((*link).get_icon_location(), p_err);
-    *icon_location = Box::into_raw(Box::new(XString::from(res)));
+    let res = checked!(
+        res.into_string_simple("shell_link_get_icon_location"),
+        p_err
+    );
+    *icon_location = Box::into_raw(Box::new(res.into()));
     *icon_index = res_index;
     ReturnCode::Ok
 }
@@ -388,4 +429,30 @@ pub unsafe extern "C" fn xstring_data(xs: *mut XString) -> *const u8 {
 #[no_mangle]
 pub unsafe extern "C" fn xstring_len(xs: *mut XString) -> usize {
     (*xs).data.len()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn create_two_shortcuts() {
+        let cwd = std::env::current_dir().unwrap();
+        println!("cwd = {:?}", cwd);
+
+        for name in &["Test1.lnk", "Test2.lnk"] {
+            let path = cwd.join(name);
+            std::fs::remove_file(&path).ok();
+
+            let sl = ShellLink::new().unwrap();
+            let target = cwd.join("Cargo.toml");
+            sl.set_path(target).unwrap();
+            sl.save(&path).unwrap();
+
+            let sl = ShellLink::new().unwrap();
+            sl.load(&path).unwrap();
+
+            std::fs::remove_file(&path).unwrap();
+        }
+    }
 }
