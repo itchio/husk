@@ -4,10 +4,14 @@
 const {
   mkdirSync,
   readFileSync,
-  rmdirSync,
   readdirSync,
   statSync,
 } = require("fs");
+
+const fs = require("fs");
+// fix for nodejs 16, rmdirsync is both deprecated and no longer works on files
+const rmdirSync = fs.rmSync || fs.rmdirSync;
+
 const { $, chalk, info, header } = require("@itchio/bob");
 
 function main() {

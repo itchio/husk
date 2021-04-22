@@ -12,10 +12,13 @@ const { resolve } = require("path");
 const {
   readFileSync,
   createWriteStream,
-  rmdirSync,
   existsSync,
   renameSync,
 } = require("fs");
+
+const fs = require("fs");
+// fix for nodejs 16, rmdirsync is both deprecated and no longer works on files
+const rmdirSync = fs.rmSync || fs.rmdirSync;
 
 /**
  * @param {string[]} args

@@ -21,8 +21,11 @@ const {
   renameSync,
   writeFileSync,
   mkdirSync,
-  rmdirSync,
 } = require("fs");
+
+const fs = require("fs");
+// fix for nodejs 16, rmdirsync is both deprecated and no longer works on files
+const rmdirSync = fs.rmSync || fs.rmdirSync;
 
 const DEFAULT_ARCH = "x86_64";
 const CBINDGEN_VERSION = "0.14.2";
