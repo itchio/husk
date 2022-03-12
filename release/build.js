@@ -20,6 +20,7 @@ const {
   readFileSync,
   renameSync,
   writeFileSync,
+  existsSync,
   mkdirSync,
 } = require("fs");
 
@@ -185,7 +186,11 @@ async function main(args) {
   $(`cbindgen --quiet --output ./include/husk.h`);
 
   info(`Generating cgo bindings from C headers`);
-  rmdirSync("lowhusk", { recursive: true });
+
+  if (existsSync("lowhusk")) {
+    rmdirSync("lowhusk", { recursive: true });
+  }
+
   {
     let targetOS = "LINUX";
     if (opts.os === "windows") {
