@@ -14,6 +14,7 @@ const {
   createWriteStream,
   existsSync,
   renameSync,
+  unlinkSync,
 } = require("fs");
 
 const fs = require("fs");
@@ -110,7 +111,7 @@ async function main(args) {
   const extract = require("extract-zip");
   await extract(output, { dir: resolve(".") });
 
-  rmdirSync(output, { recursive: true });
+  unlinkSync(output);
   rmdirSync(artifactsPath, { recursive: true });
   renameSync(platform, artifactsPath);
 
