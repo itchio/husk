@@ -112,7 +112,9 @@ async function main(args) {
   await extract(output, { dir: resolve(".") });
 
   unlinkSync(output);
-  rmdirSync(artifactsPath, { recursive: true });
+  if (existsSync(artifactsPath)) {
+    rmdirSync(artifactsPath, { recursive: true });
+  }
   renameSync(platform, artifactsPath);
 
   let end = Date.now();
@@ -133,7 +135,7 @@ function shouldSkipDownload(opts) {
     return false;
   }
 
-  let installedVersion = readFileSync(`${artifactsPath}/version`, {
+  let installedVersion = readFileSync(versionFilePath, {
     encoding: "utf-8",
   }).trim();
   debug(`Prebuilt lib on disk has version ${chalk.yellow(installedVersion)}`);
