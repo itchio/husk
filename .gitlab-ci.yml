@@ -4,7 +4,7 @@ stages:
 
 build:linux:
   stage: build
-  tags: ["docker-capsule-64"]
+  tags: linux
   script:
     - npm ci --no-audit
     - npm run build -- --os linux --arch x86_64
@@ -14,7 +14,7 @@ build:linux:
 
 build:darwin:
   stage: build
-  tags: ["darwin"]
+  tags: darwin
   script:
     - npm ci --no-audit
     - npm run build -- --os darwin --arch x86_64
@@ -24,7 +24,7 @@ build:darwin:
 
 build:windows:i686:
   stage: build
-  tags: ["windows"]
+  tags: windows
   script:
     - npm ci --no-audit
     - npm run build -- --os windows --arch i686
@@ -34,7 +34,7 @@ build:windows:i686:
 
 build:windows:x86_64:
   stage: build
-  tags: ["windows"]
+  tags: windows
   script:
     - npm ci --no-audit
     - npm run build -- --os windows --arch x86_64
@@ -45,7 +45,7 @@ build:windows:x86_64:
 deploy:
   stage: deploy
   only: ["tags"]
-  tags: ["docker-capsule-64"]
+  tags: linux
   script:
     - npm ci --no-audit
     - npm run deploy
