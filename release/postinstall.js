@@ -105,7 +105,7 @@ async function main(args) {
   let output = `./tmp.zip`;
   let out = createWriteStream(output, { autoClose: true });
 
-  debug(`Downloading from ${chalk.yellow(url)}`);
+  console.log(`Downloading from ${chalk.yellow(url)}`);
   await downloadToStream(url, out);
 
   const extract = require("extract-zip");
