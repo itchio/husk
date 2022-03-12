@@ -16,15 +16,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/fasterthanlime/comrust.git"
+    "url": "git+https://github.com/itchio/husk.git"
   },
   "keywords": [],
-  "author": "Amos Wenger <amoswenger@gmail.com>",
+  "author": "Amos Wenger <amos@itch.io>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/fasterthanlime/comrust/issues"
+    "url": "https://github.com/itchio/husk"
   },
-  "homepage": "https://github.com/fasterthanlime/comrust#readme",
+  "homepage": "https://github.com/itchio/husk",
   "devDependencies": {
     "@types/node": "^14.0.5"
   },
