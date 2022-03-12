@@ -202,14 +202,20 @@ async function main(args) {
 #define TARGET_OS_${targetOS} 1
     `;
     info(`In c-for-go defines, using target os ${chalk.green(targetOS)}`);
-    rmdirSync("cforgo-defines.h", { recursive: true });
+
+    if (existsSync("cforgo-defines.h")) {
+      rmdirSync("cforgo-defines.h", { recursive: true });
+    }
     writeFileSync("cforgo-defines.h", defines, { encoding: "utf-8" });
   }
   $(`./c-for-go husk.yml`);
 
   info(`Generating artifacts`);
   let artifactDir = `artifacts/generic`;
-  rmdirSync(artifactDir, { recursive: true });
+  if (existsSync(artifactDir)) {
+    rmdirSync(artifactDir, { recursive: true });
+  }
+
   mkdirSync(artifactDir, { recursive: true });
   let huskDir = `${artifactDir}/husk`;
   let lowhuskDir = `${artifactDir}/lowhusk`;
@@ -340,7 +346,9 @@ async function main(args) {
 
   info(`Renaming artifacts directory`);
   let finalArtifactDir = `artifacts/${opts.os}-${opts.arch}`;
-  rmdirSync(finalArtifactDir, { recursive: true });
+  if (existsSync(finalArtifactDir)) {
+    rmdirSync(finalArtifactDir, { recursive: true });
+  }
   renameSync(artifactDir, finalArtifactDir);
 }
 
