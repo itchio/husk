@@ -63,6 +63,8 @@ jobs:
 
       - name: Build
         shell: bash
+        env:
+          NO_STRIP: ${{ matrix.os == 'windows' && '1' || '' }}
         run: npm run build -- --os ${{ matrix.os }} --arch ${{ matrix.arch }}
 
       - name: Upload artifacts
