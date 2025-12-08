@@ -430,12 +430,12 @@ pub unsafe extern "C" fn xstring_free(xs: *mut XString) {
 
 #[no_mangle]
 pub unsafe extern "C" fn xstring_data(xs: *mut XString) -> *const u8 {
-    (*xs).data.as_ptr()
+    (*xs).data.as_bytes().as_ptr()
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn xstring_len(xs: *mut XString) -> usize {
-    (*xs).data.len()
+    (*xs).data.as_bytes().len()
 }
 
 #[cfg(test)]
