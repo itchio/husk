@@ -263,7 +263,15 @@ async function main(args) {
     let libs = ["husk"];
     let ldextra = "";
     if (opts.os === "windows") {
-      libs = [...libs, "ws2_32", "advapi32", "shell32", "userenv", "ole32"];
+      libs = [
+        ...libs,
+        "ws2_32",
+        "advapi32",
+        "shell32",
+        "userenv",
+        "ole32",
+        "ntdll",
+      ];
     } else if (opts.os === "linux") {
       libs = [...libs, "dl"];
     }
