@@ -1,0 +1,101 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: linux
+            arch: x86_64
+            runner: ubuntu-latest
+          - os: darwin
+            arch: x86_64
+            runner: macos-13
+          - os: darwin
+            arch: arm64
+            runner: macos-latest
+          - os: windows
+            arch: x86_64
+            runner: windows-latest
+
+    runs-on: ${{ matrix.runner }}
+    name: Build (${{ matrix.os }}-${{ matrix.arch }})
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+
+      - name: Setup Rust
+        uses: dtolnay/rust-action@stable
+
+      - name: Setup MSYS2
+        if: matrix.os == 'windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-binutils
+            zip
+
+      - name: Add MSYS2 to PATH
+        if: matrix.os == 'windows'
+        shell: bash
+        run: echo "D:/a/_temp/msys64/mingw64/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: npm ci --no-audit
+
+      - name: Build
+        shell: bash
+        run: npm run build -- --os ${{ matrix.os }} --arch ${{ matrix.arch }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.os }}-${{ matrix.arch }}
+          path: artifacts/${{ matrix.os }}-${{ matrix.arch }}/
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    name: Deploy
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Install dependencies
+        run: npm ci --no-audit
+
+      - name: Deploy
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run deploy

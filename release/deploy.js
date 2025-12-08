@@ -39,9 +39,9 @@ function main() {
   header("Gathering information");
   $(`node --version`);
 
-  let tag = process.env.CI_COMMIT_TAG;
+  let tag = process.env.CI_COMMIT_TAG || process.env.GITHUB_REF_NAME;
   if (!tag) {
-    throw new Error(`$CI_COMMIT_TAG not set, bailing out`);
+    throw new Error(`$CI_COMMIT_TAG or $GITHUB_REF_NAME not set, bailing out`);
   }
 
   let matches = /v([0-9]+)\.([0-9]+)\.([0-9]+)/.exec(tag);
