@@ -55,7 +55,7 @@ function main() {
   let [, major, minor, patch] = matches;
   info(`Releasing version ${chalk.yellow(`${major}.${minor}.${patch}`)}`);
 
-  rmdirSync("./artifacts/tmp.zip", { recursive: true });
+  rmdirSync("./artifacts/tmp.zip", { recursive: true, force: true });
   const targets = readdirSync("./artifacts");
   info(`Will upload targets: ${targets.map(chalk.yellow).join(", ")}`);
 
@@ -111,7 +111,7 @@ function main() {
         `--label "${label}" --name "${target}.zip"`,
       ].join(" ")
     );
-    rmdirSync("./artifacts/tmp.zip", { recursive: true });
+    rmdirSync("./artifacts/tmp.zip", { recursive: true, force: true });
   }
 }
 
